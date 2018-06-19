@@ -7,7 +7,7 @@ const morgan = require('morgan');
 const passport = require('passport');
 
 const { router: usersRouter } = require('./routes/users');
-const { router: authRouter } = require('./routes/auth');
+const { router: authRouter, localStrategy, jwtStrategy } = require('./routes/auth');
 
 const { PORT, DATABASE_URL } = require('./config');
 
@@ -36,9 +36,9 @@ passport.use(jwtStrategy);
 //app.use(express.static(path.join(__dirname, '/public')));
 
 // to create user account (no credential is needed nor created at this step)
-app.use('/users/', usersRouter);
+app.use('/api/users/', usersRouter);
 // given username & password, create credential (JWT) that can be used to access protected resources in the server, i.e., the '/api/protected' path in this case
-app.use('/auth/', authRouter);
+app.use('/api/auth/', authRouter);
 
 // catch any un-specified path
 app.use('*', (req, res) => {
