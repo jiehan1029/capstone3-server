@@ -1,44 +1,55 @@
 'use strict';
 
+// import env and config
 require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const morgan = require('morgan');
-const passport = require('passport');
-
-const { router: usersRouter } = require('./routes/users');
-const { router: authRouter, localStrategy, jwtStrategy } = require('./routes/auth');
-
 const { PORT, DATABASE_URL } = require('./config');
 
-mongoose.Promise = global.Promise;
-
+// create app
+const express = require('express');
 const app = express();
 
-app.use(morgan('common'));
-
-// CORS
+// setup CORS
 app.use(function (req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE');
   if (req.method === 'OPTIONS') {
-    return res.send(204);
+    // must use sendStatus or send, cannot use status
+    return res.sendStatus(204);
   }
   next();
 });
 
-// this is to register the strategies so that can be used in authentication ('/auth/router.js')
+// https://medium.com/front-end-hacking/node-js-logs-in-local-timezone-on-morgan-and-winston-9e98b2b9ca45
+const morgan = require('morgan');
+// moment-timezone is used to dealwith timezone
+const moment = require('moment-timezone');
+morgan.token('date', (req, res) => {
+  return moment().tz('America/Los_Angeles').format();
+})
+morgan.format('myformat', '[:date[clf]] ":method :url" :status :res[content-length] - :response-time ms');
+app.use(morgan('myformat'));
+
+// setup mongoose
+const mongoose = require('mongoose');
+mongoose.Promise = global.Promise;
+
+// import auth router, setup passport and jwt
+const { router: authRouter, localStrategy, jwtStrategy } = require('./routes/auth');
+const passport = require('passport');
 passport.use(localStrategy);
 passport.use(jwtStrategy);
 
-// serve static asset
-//app.use(express.static(path.join(__dirname, '/public')));
+// import other routers
+const { router: usersRouter } = require('./routes/users');
+const { router: myBucketRouter } = require('./routes/my-bucket');
 
-// to create user account (no credential is needed nor created at this step)
+// use routers
 app.use('/api/users/', usersRouter);
-// given username & password, create credential (JWT) that can be used to access protected resources in the server, i.e., the '/api/protected' path in this case
 app.use('/api/auth/', authRouter);
+// routers for protected endpoints
+const jwtAuth = passport.authenticate('jwt', { session: false });
+app.use('/api/my-bucket', jwtAuth, myBucketRouter);
 
 // catch any un-specified path
 app.use('*', (req, res) => {

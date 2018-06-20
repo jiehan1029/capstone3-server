@@ -1,7 +1,3 @@
-// this is to create a users model that links to the 'User' collection in the mongoDB via mongoose
-// this is named as 'models.js' inside './users/' folder, and linked to 'server.js' (node-with-JWT-auth-server.js) file via 'index.js' inside './users/' folder; also linked to 'router.js' in the same folder
-
-
 'use strict';
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
