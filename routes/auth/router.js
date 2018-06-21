@@ -21,14 +21,13 @@ router.use(bodyParser.json());
 
 // The user provides a username and password to login
 router.post('/login', localAuth, (req, res) => {
-  console.log('in login')
 	const authToken = createAuthToken(req.user.serialize());
   res.cookie('username',req.user.username,
     {
       httpOnly:true,
       maxAge:18000000
     });  
-  console.log('user login succeeded',req.user.username);
+  console.log('user login succeeded: ',req.user.username);
   res.status(200).json({authToken});
 });
 

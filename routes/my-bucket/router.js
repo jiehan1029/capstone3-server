@@ -94,36 +94,22 @@ router.put('/ticket/:ticketId',(req,res)=>{
     	toUpdate[field] = req.body[field];
     }
   });
-  // find the bucket to be updated using username
-  MyBucket.find({username:username})
+
+  // to update the subdocument in an array using set and save
+  // https://stackoverflow.com/questions/40642154/use-mongoose-to-update-subdocument-in-array
+  MyBucket.find({"username":username})
     .then(resArr=>{
-      if(resArr.length!=1){
-        return Promise.reject({
-          code:500,
-          reason:"Unexpected user data",
-          message:"Internal Server Error",
-          location:"Database"
-        });
-      }
-      // find the ticket to be updated using ticketId
-      // https://coderwall.com/p/6v5rcw/querying-sub-documents-and-sub-sub-documents-in-mongoose
-      const theTicket=resArr[0].tickets.id(ticketId);
-      const updatedTicket=Object.assign({},theTicket,
-      {
-        what:req.body.what,
-        where:req.body.where,
-        details:req.body.details,
-        type:req.body.type
-      });
-      // use set to update mongoose document
-      // https://stackoverflow.com/questions/26156687/mongoose-find-update-subdocument
-      theTicket.set(updatedTicket);
-      console.log(`update ticket ${ticketId} successfully`)
-      res.status(200).json(theTicket);
+      const toUpdateTicket=Object.assign(resArr[0].tickets.id(ticketId),toUpdate);
+      let subDoc=resArr[0].tickets.id(ticketId);
+      subDoc.set(toUpdateTicket);
+      resArr[0].save().then(savedDoc=>{
+        console.log(`update ticket ${ticketId} successfully`)
+        res.status(200).json(savedDoc);
+      })
     })
     .catch(err=>{
       console.error(err);
-      res.status(500).json(err.message);
+      res.status(500).json({message:'Internal Server Error'});
     });
 });
 

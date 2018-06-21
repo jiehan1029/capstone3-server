@@ -43,6 +43,7 @@ passport.use(jwtStrategy);
 // import other routers
 const { router: usersRouter } = require('./routes/users');
 const { router: myBucketRouter } = require('./routes/my-bucket');
+const { router: myWallRouter } = require ('./routes/my-wall');
 
 // use routers
 app.use('/api/users/', usersRouter);
@@ -50,6 +51,7 @@ app.use('/api/auth/', authRouter);
 // routers for protected endpoints
 const jwtAuth = passport.authenticate('jwt', { session: false });
 app.use('/api/my-bucket', jwtAuth, myBucketRouter);
+app.use('/api/my-wall',jwtAuth,myWallRouter);
 
 // catch any un-specified path
 app.use('*', (req, res) => {
