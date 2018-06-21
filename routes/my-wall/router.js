@@ -1,18 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const bodyParser=require('body-parser');
-const cookieParser=require('cookie-parser');
-const {MyBucket}=require('./models');
+
+const {MyRecords}=require('./models');
 
 router.use(bodyParser.json());
-router.use(cookieParser());
 
 // GET retrieve all tickets from user's bucket
 router.get('/', (req, res) => {
-  const username=req.cookies.username;
-  MyBucket.find({username:username})
+  console.log(req.query);
+  MyBucket.find({user:req.query.username})
     .then(resultArray => {
-      const tickets = resultArray[0].serialize();
+      const tickets = resultArray[0];
       res.status(200).json(tickets);
     })
     .catch(err => {
@@ -21,10 +20,10 @@ router.get('/', (req, res) => {
 });
 
 // POST create new ticket
-// request supplies what, where, type and details
+// request supplies username, what, where, type and details
 router.post('/',(req,res)=>{
-  const username=req.cookies.username;
-  const requiredFields = ['what'];
+  console.log(req.body);
+  const requiredFields = ['username','what'];
   for (let i = 0; i < requiredFields.length; i++) {
     const field = requiredFields[i];
     if (!(field in req.body)) {
@@ -33,14 +32,15 @@ router.post('/',(req,res)=>{
       return res.status(400).json({message:message});
     }
   }
+
   // if the user doesnt have a bucket yet, create a bucket
   // otherwise update existing bucket
-  MyBucket.find({username:username})
+  MyBucket.find({username:req.body.username})
     .then(bucketArray=>{
       if(bucketArray.length===0){
-        console.log('create a bucket and add a ticket for user ',username);
+        console.log('create a bucket and add a ticket for user ',req.body.username);
         return MyBucket.create({
-          username:username,
+          username:req.body.username,
           tickets:[{
             what:req.body.what,
             where:req.body.where,
@@ -62,8 +62,6 @@ router.post('/',(req,res)=>{
           details:req.body.details
         };
         bucketArray[0].tickets.push(newTickets);
-        bucketArray[0].save();
-        res.status(200).json(bucketArray[0].tickets);
       }
       else{
         return Promise.reject({
@@ -81,11 +79,16 @@ router.post('/',(req,res)=>{
 });
 
 // PUT update one ticket
-// request.body fields to be updated
-router.put('/ticket/:ticketId',(req,res)=>{
-  // ticketId is stored in req.params.ticketId
-  const username=req.cookies.username;
-  const ticketId=req.params.ticketId;
+// request.body supplies ticketId and fields to be updated
+router.put('/:ticketId',(req,res)=>{
+  console.log(req.body);
+	// check recipe ticketId is supplied
+	if (!req.body.ticketId || !req.body.username){
+		const message=`missing required field {ticketId} or {username} in request body`;
+		console.error(message);
+		res.status(400).json({ message: message });
+  }
+
   // allow to update: what, where, type, details
   const toUpdate = {};
   const updateableFields = ['what', 'where', 'type', 'details'];
@@ -94,8 +97,9 @@ router.put('/ticket/:ticketId',(req,res)=>{
     	toUpdate[field] = req.body[field];
     }
   });
+
   // find the bucket to be updated using username
-  MyBucket.find({username:username})
+  MyBucket.find({username:req.body.username})
     .then(resArr=>{
       if(resArr.length!=1){
         return Promise.reject({
@@ -106,8 +110,14 @@ router.put('/ticket/:ticketId',(req,res)=>{
         });
       }
       // find the ticket to be updated using ticketId
-      // https://coderwall.com/p/6v5rcw/querying-sub-documents-and-sub-sub-documents-in-mongoose
-      const theTicket=resArr[0].tickets.id(ticketId);
+      let theTicket, theIndex;
+      for(let i=0;i<resArr[0].tickets.length;i++){
+        if(resArr[0].tickets[i]._id===req.body.ticketId){
+          theTicket=resArr[0].tickets[i];
+          theIndex=i;
+          break;
+        }
+      }
       const updatedTicket=Object.assign({},theTicket,
       {
         what:req.body.what,
@@ -115,11 +125,7 @@ router.put('/ticket/:ticketId',(req,res)=>{
         details:req.body.details,
         type:req.body.type
       });
-      // use set to update mongoose document
-      // https://stackoverflow.com/questions/26156687/mongoose-find-update-subdocument
-      theTicket.set(updatedTicket);
-      console.log(`update ticket ${ticketId} successfully`)
-      res.status(200).json(theTicket);
+      resArr[0].tickets[theIndex]=updatedTicket;
     })
     .catch(err=>{
       console.error(err);
@@ -127,12 +133,17 @@ router.put('/ticket/:ticketId',(req,res)=>{
     });
 });
 
-// DELETE a ticket
-router.delete('/ticket/:ticketId',(req,res)=>{
-  const ticketId=req.params.ticketId;
-  const username=req.cookies.username;
+// DELETE a ticket req.body supplies ticketId
+router.delete('/:ticketId',(req,res)=>{
+  const ticketId=req.body.ticketId;
+  console.log(req.body);
+  if(!req.body.username || !req.body.ticketId){
+    const message='missing {username} or {ticketId} in request body';
+    console.error(message);
+    return res.status(400).json({message:message});
+  }
   MyBucket
-    .find({username:username})
+    .find({username:req.body.username})
     .then(resArr => {
       if(resArr.length!=1){
         return Promise.reject({
@@ -142,12 +153,18 @@ router.delete('/ticket/:ticketId',(req,res)=>{
           location:"Database"
         });
       }
-      // find the ticket and remove it
-      resArr[0].tickets.id(ticketId).remove();
-      resArr[0].save();
-    	console.log(`Deleted ticket ${ticketId} from ${username}'s bucket`);
+      // find the ticket to be deleted using ticketId
+      let theTicket, theIndex;
+      for(let i=0;i<resArr[0].tickets.length;i++){
+        if(resArr[0].tickets[i].ticketId===req.body.ticketId){
+          theTicket=resArr[0].tickets[i];
+          theIndex=i;
+          break;
+        }
+      }
+      resArr[0].tickets.splice(theIndex,1);
+    	console.log(`Deleted ticket ${req.body.ticketId} from ${req.body.username}'s bucket`);
     	res.status(204).end();
-
     })
     .catch(err => res.status(500).json(err.message));
 });
