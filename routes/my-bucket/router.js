@@ -1,18 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const bodyParser=require('body-parser');
-const cookieParser=require('cookie-parser');
+const jwtDecode=require('jwt-decode');
+
 const {MyBucket}=require('./models');
 
 router.use(bodyParser.json());
-router.use(cookieParser());
 
 // GET retrieve all tickets from user's bucket
 router.get('/', (req, res) => {
-  const username=req.cookies.username;
+  const userAuth=req.headers.authorization.substr(7,);
+  const username=jwtDecode(userAuth).user.username;
   MyBucket.find({username:username})
     .then(resultArray => {
-      const tickets = resultArray[0].serialize();
+      const tickets = resultArray[0].serialize().tickets;
+      //console.log(tickets);
+      console.log(`retrieved ${tickets.length} tickets for ${username}`);
       res.status(200).json(tickets);
     })
     .catch(err => {
@@ -23,7 +26,9 @@ router.get('/', (req, res) => {
 // POST create new ticket
 // request supplies what, where, type and details
 router.post('/',(req,res)=>{
-  const username=req.cookies.username;
+  const userAuth=req.headers.authorization.substr(7,);
+  const username=jwtDecode(userAuth).user.username;
+  console.log(username, 'made a request');
   const requiredFields = ['what'];
   for (let i = 0; i < requiredFields.length; i++) {
     const field = requiredFields[i];
@@ -84,7 +89,9 @@ router.post('/',(req,res)=>{
 // request.body fields to be updated
 router.put('/ticket/:ticketId',(req,res)=>{
   // ticketId is stored in req.params.ticketId
-  const username=req.cookies.username;
+  const userAuth=req.headers.authorization.substr(7,);
+  const username=jwtDecode(userAuth).user.username;
+  console.log(username, 'made a request');
   const ticketId=req.params.ticketId;
   // allow to update: what, where, type, details
   const toUpdate = {};
@@ -116,7 +123,9 @@ router.put('/ticket/:ticketId',(req,res)=>{
 // DELETE a ticket
 router.delete('/ticket/:ticketId',(req,res)=>{
   const ticketId=req.params.ticketId;
-  const username=req.cookies.username;
+  const userAuth=req.headers.authorization.substr(7,);
+  const username=jwtDecode(userAuth).user.username;
+  console.log(username, 'made a request');
   MyBucket
     .find({username:username})
     .then(resArr => {

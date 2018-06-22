@@ -2,21 +2,22 @@ const express = require('express');
 const router = express.Router();
 
 const bodyParser=require('body-parser');
-const cookieParser=require('cookie-parser');
+const jwtDecode=require('jwt-decode');
 router.use(bodyParser.json());
-router.use(cookieParser());
 
 const {MyRecords}=require('./models');
 
 // GET retrieve all records of the user
 router.get('/', (req, res) => {
-  MyRecords.find({username:req.cookies.username})
+  const userAuth=req.headers.authorization.substr(7,);
+  const username=jwtDecode(userAuth).user.username;  
+  MyRecords.find({username:username})
     .then(resultArray => {
       let records=[];
       resultArray.forEach(result=>{
         records.push(result.serialize());
       });
-      console.log(`retrieved ${records.length} records for user ${req.cookies.username}`);
+      console.log(`retrieved ${records.length} records for user ${username}`);
       res.status(200).json(records);
     })
     .catch(err => {
@@ -29,7 +30,8 @@ router.get('/', (req, res) => {
 // test ticketid   5b2b03c2c4bb323a407743d9
 router.post('/ticket/:ticketId',(req,res)=>{
   const ticketId=req.params.ticketId;
-  const username=req.cookies.username;
+  const userAuth=req.headers.authorization.substr(7,);
+  const username=jwtDecode(userAuth).user.username;
   const requiredFields = ['text'];
   for (let i = 0; i < requiredFields.length; i++) {
     const field = requiredFields[i];
@@ -61,7 +63,8 @@ router.post('/ticket/:ticketId',(req,res)=>{
 // PUT update a record of the ticket
 // request.body supplies fields to be updated
 router.put('/ticket/:ticketId/record/:recordId',(req,res)=>{
-  const username=req.cookies.username;
+  const userAuth=req.headers.authorization.substr(7,);
+  const username=jwtDecode(userAuth).user.username;
   const ticketId=req.params.ticketId;
   const recordId=req.params.recordId;
   const toUpdate = {};
@@ -91,7 +94,7 @@ router.delete('/ticket/:ticketId/record/:recordId',(req,res)=>{
   MyRecords
     .findByIdAndRemove(req.params.recordId)
     .then(() => {
-    	console.log(`Deleted record ${req.params.recordId} from ticket ${req.params.ticketId} for user ${req.cookies.username}`);
+    	console.log(`Deleted record ${req.params.recordId} from ticket ${req.params.ticketId}`);
     	res.status(204).end();
     })
     .catch(err => res.status(500).json(err.message));
