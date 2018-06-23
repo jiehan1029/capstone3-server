@@ -9,13 +9,14 @@ router.use(bodyParser.json());
 
 // GET retrieve all tickets from user's bucket
 router.get('/', (req, res) => {
+  console.log("visitor ip address is ", req.connection.remoteAddress);
   const userAuth=req.headers.authorization.substr(7,);
   const username=jwtDecode(userAuth).user.username;
   MyBucket.find({username:username})
     .then(resultArray => {
       const tickets = resultArray[0].serialize().tickets;
       //console.log(tickets);
-      console.log(`retrieved ${tickets.length} tickets for ${username}`);
+      console.log(`retrieved ${tickets.length} tickets for user: ${username}`);
       res.status(200).json(tickets);
     })
     .catch(err => {
@@ -28,7 +29,8 @@ router.get('/', (req, res) => {
 router.post('/',(req,res)=>{
   const userAuth=req.headers.authorization.substr(7,);
   const username=jwtDecode(userAuth).user.username;
-  console.log(username, 'made a request');
+  console.log('user: ',username, ' made a request');
+  console.log(req.body);
   const requiredFields = ['what'];
   for (let i = 0; i < requiredFields.length; i++) {
     const field = requiredFields[i];
@@ -43,7 +45,7 @@ router.post('/',(req,res)=>{
   MyBucket.find({username:username})
     .then(bucketArray=>{
       if(bucketArray.length===0){
-        console.log('create a bucket and add a ticket for user ',username);
+        console.log('create a bucket and add a ticket for user: ',username);
         return MyBucket.create({
           username:username,
           tickets:[{
@@ -91,7 +93,7 @@ router.put('/ticket/:ticketId',(req,res)=>{
   // ticketId is stored in req.params.ticketId
   const userAuth=req.headers.authorization.substr(7,);
   const username=jwtDecode(userAuth).user.username;
-  console.log(username, 'made a request');
+  console.log(username, ' made a request');
   const ticketId=req.params.ticketId;
   // allow to update: what, where, type, details
   const toUpdate = {};
@@ -110,7 +112,7 @@ router.put('/ticket/:ticketId',(req,res)=>{
       let subDoc=resArr[0].tickets.id(ticketId);
       subDoc.set(toUpdateTicket);
       resArr[0].save().then(savedDoc=>{
-        console.log(`update ticket ${ticketId} successfully`)
+        console.log(`update ticket: ${ticketId} successfully`)
         res.status(200).json(savedDoc);
       })
     })
@@ -125,7 +127,7 @@ router.delete('/ticket/:ticketId',(req,res)=>{
   const ticketId=req.params.ticketId;
   const userAuth=req.headers.authorization.substr(7,);
   const username=jwtDecode(userAuth).user.username;
-  console.log(username, 'made a request');
+  console.log(username, ' made a request');
   MyBucket
     .find({username:username})
     .then(resArr => {
@@ -140,7 +142,7 @@ router.delete('/ticket/:ticketId',(req,res)=>{
       // find the ticket and remove it
       resArr[0].tickets.id(ticketId).remove();
       resArr[0].save();
-    	console.log(`Deleted ticket ${ticketId} from ${username}'s bucket`);
+    	console.log(`Deleted ticket ${ticketId} from: ${username}'s bucket`);
     	res.status(204).end();
 
     })
