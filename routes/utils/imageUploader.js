@@ -4,7 +4,8 @@ const knox = require('knox');
 const {S3_KEY, SE_SECRET, BUCKET_NAME} = require('../../config');
 
 const ImageUploader = function(options){
-
+  console.log('in utility image uploader');
+  console.log(S3_KEY);
   let deferred = Q.defer();
   let buf = new Buffer(options.data_uri.replace(/^data:image\/\w+;base64,/, ""),'base64');
 

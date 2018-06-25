@@ -11,14 +11,14 @@ router.post('/', function (req, res) {
   }).then(onGoodImageProcess, onBadImageProcess);
 
   function onGoodImageProcess(resp) {
-    res.send({
+    res.status(200).json({
       status: 'success',
       uri: resp
     });
   }
 
   function onBadImageProcess(resp) {
-    res.send({
+    res.status(400).json({
      status: 'error'
     });
   }

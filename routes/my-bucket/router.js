@@ -93,11 +93,10 @@ router.put('/ticket/:ticketId',(req,res)=>{
   // ticketId is stored in req.params.ticketId
   const userAuth=req.headers.authorization.substr(7,);
   const username=jwtDecode(userAuth).user.username;
-  console.log(username, ' made a request');
   const ticketId=req.params.ticketId;
   // allow to update: what, where, type, details
   const toUpdate = {};
-  const updateableFields = ['what', 'where', 'type', 'details'];
+  const updateableFields = ['what','where', 'type', 'details'];
   updateableFields.forEach( field => {
     if(field in req.body){
     	toUpdate[field] = req.body[field];
@@ -112,8 +111,8 @@ router.put('/ticket/:ticketId',(req,res)=>{
       let subDoc=resArr[0].tickets.id(ticketId);
       subDoc.set(toUpdateTicket);
       resArr[0].save().then(savedDoc=>{
-        console.log(`update ticket: ${ticketId} successfully`)
-        res.status(200).json(savedDoc);
+        console.log(`update ticket: ${ticketId} successfully for user: ${username}`);
+        res.status(200).json(savedDoc.tickets);
       })
     })
     .catch(err=>{
