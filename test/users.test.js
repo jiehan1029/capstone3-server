@@ -7,9 +7,7 @@ const mongoose = require('mongoose');
 
 
 const {app, runServer, closeServer} = require('../server');
-
 const {Users} = require('../routes/users/models');
-
 const {TEST_DATABASE_URL} = require('../config');
 
 chai.use(chaiHttp);
@@ -66,7 +64,7 @@ describe('test Users endpoint',function(){
         expect(res).to.be.json;
         expect(res.body).to.be.a('object');
         expect(res.body).to.include.keys('username');
-	// check response match request
+	      // check response match request
         expect(res.body.username).to.equal(newItem.username);
         // cause Mongo should have created id on insertion
         expect(res.body.id).to.not.be.null;
@@ -75,10 +73,9 @@ describe('test Users endpoint',function(){
         return Users.findById(res.body.id);
       })
       .then(function(dbItem) {
-	// check db item match request
+	      // check db item match request
         expect(dbItem.username).to.equal(newItem.username);
       });
     });
   });	
-	
 });	
