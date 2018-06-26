@@ -16,7 +16,7 @@ let user_details={
   password:faker.random.word()
 }
 
-describe('test user auth and my-bucket endpoint',()=>{
+describe('test user auth and my-wall endpoint',()=>{
   beforeEach((done)=>{
     // reset user mode (passed auth or not) before each test
     Users.remove({},(err)=>{

@@ -7,7 +7,7 @@ mongoose.Promise = global.Promise;
 const RecordsSchema = mongoose.Schema({
   username:{type:String, required:true},
   ticketId:{type:String, required:true},
-  time:{type:Date, default: Date.now()},
+  time:{type:String, default: '0000-00-00'},
   text:{type:String},
   imageUrl:[{type:String}]
 });
