@@ -46,6 +46,10 @@ const { router: myBucketRouter } = require('./routes/my-bucket');
 const { router: myWallRouter } = require ('./routes/my-wall');
 const { router: imageRouter } = require('./routes/image');
 
+// serve static files
+const path=require('path');
+app.use(express.static(path.join(__dirname, '/public')));
+
 // use routers
 app.use('/api/users/', usersRouter);
 app.use('/api/auth/', authRouter);

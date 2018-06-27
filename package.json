@@ -12,16 +12,15 @@
     "bcryptjs": "^2.4.3",
     "dotenv": "^6.0.0",
     "express": "^4.16.3",
+    "formidable": "^1.2.1",
     "jsonwebtoken": "^8.3.0",
     "jwt-decode": "^2.2.0",
-    "knox": "^0.9.2",
     "moment-timezone": "^0.5.20",
     "mongoose": "^5.1.5",
     "morgan": "^1.9.0",
     "passport": "^0.4.0",
     "passport-jwt": "^4.0.0",
-    "passport-local": "^1.0.0",
-    "q": "^1.5.1"
+    "passport-local": "^1.0.0"
   },
   "devDependencies": {
     "chai": "^4.1.2",

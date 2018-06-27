@@ -7,4 +7,10 @@ const formatDate=function(date){
 	return res;
 }
 
-module.exports={formatDate};
+const strToDate=function(dateStr){
+	// input date string (yyyy-mm-dd), output date object
+	return new Date(dateStr);
+}
+
+module.exports={formatDate, strToDate};
+

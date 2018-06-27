@@ -7,16 +7,21 @@ mongoose.Promise = global.Promise;
 const RecordsSchema = mongoose.Schema({
   username:{type:String, required:true},
   ticketId:{type:String, required:true},
-  time:{type:String, default: '0000-00-00'},
-  text:{type:String},
-  imageUrl:[{type:String}]
+  ticketName:{type:String},
+  dateStr:{type:String},
+  date:{type:Date, default: new Date('2000-01-01')},
+  imageUrl:[{
+    src:{type:String},
+    comment:{type:String}
+  }]
 });
 
 RecordsSchema.methods.serialize=function(){
   return {
     ticketId:this.ticketId,
-    time:this.time,
-    text:this.text,
+    ticketName:this.ticketName,
+    dateStr:this.dateStr,
+    date:this.date,
     imageUrl:this.imageUrl,
     id:this._id
   }

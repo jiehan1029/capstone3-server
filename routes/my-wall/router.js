@@ -2,10 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const bodyParser=require('body-parser');
-const jwtDecode=require('jwt-decode');
 router.use(bodyParser.json());
 
+const jwtDecode=require('jwt-decode');
+
 const {MyRecords}=require('./models');
+const {strToDate}=require('../utils/format-date');
 
 // GET retrieve all records of the user
 router.get('/', (req, res) => {
@@ -26,13 +28,12 @@ router.get('/', (req, res) => {
 });
 
 // POST create new records for a specific ticket
-// request supplies time, text, imageUrl (array)
-// test ticketid   5b2b03c2c4bb323a407743d9
+// request supplies date (string, will be processed), imageUri, comment
 router.post('/ticket/:ticketId',(req,res)=>{
   const ticketId=req.params.ticketId;
   const userAuth=req.headers.authorization.substr(7,);
   const username=jwtDecode(userAuth).user.username;
-  const requiredFields = ['text'];
+  const requiredFields = ['imageUri','ticketName'];
   for (let i = 0; i < requiredFields.length; i++) {
     const field = requiredFields[i];
     if (!(field in req.body)) {
@@ -42,13 +43,19 @@ router.post('/ticket/:ticketId',(req,res)=>{
     }
   }
 
+  const dateStr=req.body.date || '2001-01-01';
+  const dateObj=strToDate(dateStr);
   MyRecords
     .create({
       username:username,
       ticketId:ticketId,
-      time:req.body.time || Date.now(),
-      text:req.body.text,
-      imageUrl:req.body.imageUrl || []
+      ticketName:req.body.ticketName,
+      dateStr:dateStr,
+      date:dateObj,
+      imageUrl:{
+        src:imageSrc || '',
+        comment:req.body.comment || ''
+      }
     })
     .then(newRecord=>{
       console.log(`create new record ${newRecord._id} for ticket ${ticketId} of user ${username}`);
@@ -68,7 +75,7 @@ router.put('/ticket/:ticketId/record/:recordId',(req,res)=>{
   const ticketId=req.params.ticketId;
   const recordId=req.params.recordId;
   const toUpdate = {};
-  const updateableFields = ['time', 'text', 'imageUrl'];
+  const updateableFields = ['date', 'comment', 'src'];
   updateableFields.forEach( field => {
     if(field in req.body){
     	toUpdate[field] = req.body[field];
