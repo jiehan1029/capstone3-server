@@ -44,13 +44,14 @@ passport.use(jwtStrategy);
 const { router: usersRouter } = require('./routes/users');
 const { router: myBucketRouter } = require('./routes/my-bucket');
 const { router: myWallRouter } = require ('./routes/my-wall');
-//const { router: imageRouter } = require('./routes/image');
+const { router: indexRouter } = require('./routes/index-response');
 
 // serve static files
 const path=require('path');
 app.use(express.static(path.join(__dirname, '/public')));
 
 // use routers
+app.use('/',indexRouter);
 app.use('/api/users/', usersRouter);
 app.use('/api/auth/', authRouter);
 // routers for protected endpoints
