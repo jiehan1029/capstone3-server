@@ -3,11 +3,15 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 const faker = require('faker');
 const mongoose = require('mongoose');
+
 const {app, runServer, closeServer} = require('../server');
+
 const {MyRecords} = require('../routes/my-wall/models');
 const {MyBucket} = require('../routes/my-bucket/models');
 const {Users} = require('../routes/users/models');
+
 const {TEST_DATABASE_URL} = require('../config');
+
 chai.use(chaiHttp);
 const expect = chai.expect;
 
