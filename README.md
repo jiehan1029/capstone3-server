@@ -90,6 +90,6 @@ On success, server returns status code 204.
 
 ## Technologies used
 This server is written in **Node.js** with **Mongo** database. To provide better consistency and stability, **mLab** is employed instead of a local database. **Mongoose** is used as database interface.
-User authentication is handled using JSON web token (JWT) and image upload & retrival are enabled by online file system.
+User authentication is handled using JSON web token (JWT) and image upload & storage is implemented with Cloudinary.
 All test is done with **mocha** and **chai**.
 Continuous integration and deployment are achieved with **TravisCI** and **Heroku**.
