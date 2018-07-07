@@ -129,7 +129,7 @@ router.delete('/ticket/:ticketId/record/:recordId',(req,res)=>{
   MyRecords.find({_id:req.params.recordId})
   .then(docs=>{
     docs.map(doc=>{
-      doc.imageUrl.map(imgObj=>{publicIds.push(imgObj.publicId);});
+      doc.imageUrl.map(imgObj=>{publicIds.push(imgObj.publicId)});
     });
     return publicIds;
   })
@@ -141,7 +141,8 @@ router.delete('/ticket/:ticketId/record/:recordId',(req,res)=>{
         }else{
           console.log('Success: deleted image from cloudinary - ',result);
         }
-    }); 
+      }); 
+    });
 
     MyRecords
     .findByIdAndRemove(req.params.recordId)
@@ -175,18 +176,19 @@ router.delete('/image/:imageId',(req,res)=>{
     // delete file from cloudinary
     cloudinary.v2.uploader.destroy(imgPublicId,(err,result)=>{
       console.log(result);
-    })
+    });
 
     // delete database info
     docs[0].imageUrl.splice(toDelete,1);
     docs[0].save();
-    console.log(`delete image (publicId: ${imgPublicId}) from the record`);
+    console.log(`delete image publicId: ${imgPublicId} from the record`);
     res.status(204).end();
   })
   .catch(err=>{
     console.error(err);
     res.status(500).json({message:'Internal Server Error'});
-  })
-})
+  });
+});
 
-module.exports = {router};
+module.exports = {router}
+
