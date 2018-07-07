@@ -1,20 +1,21 @@
 const express = require('express');
 const router = express.Router();
-
-const fs=require('fs');
-const path = require('path');
-
+const jwtDecode=require('jwt-decode');
 // bodyParser middleware cannot be used with formidable
 const bodyParser=require('body-parser');
-//router.use(bodyParser.json());
-
 // to handle formData and file upload
 const formidable = require('formidable');
 
-const jwtDecode=require('jwt-decode');
-
 const {MyRecords}=require('./models');
 const {strToDate}=require('../utils/format-date');
+
+const cloudinary = require('cloudinary');
+const {CLOUD_NAME, CLOUD_KEY, CLOUD_SECRET}=require('../../config');
+cloudinary.config({ 
+  cloud_name: CLOUD_NAME, 
+  api_key: CLOUD_KEY, 
+  api_secret: CLOUD_SECRET 
+});
 
 // GET retrieve all records of the user
 router.get('/', (req, res) => {
@@ -37,6 +38,8 @@ router.get('/', (req, res) => {
 // POST create new record (photo collection) for a specific ticket & date
 router.post('/ticket/:ticketId', function (req, res) {
   console.log('user request to upload image');
+  const userAuth=req.headers.authorization.substr(7,);
+  const username=jwtDecode(userAuth).user.username; 
 
   // takes submitted file and saves it to a public folder
   let form = new formidable.IncomingForm();
@@ -44,67 +47,48 @@ router.post('/ticket/:ticketId', function (req, res) {
 
   form.parse(req, function(err, fields, files) {
     // `file` is the name of the <input> field of type `file`
-    let old_path = files.file.path,
-    index = old_path.lastIndexOf('\\') + 1,
-    file_name = old_path.substr(index),
-    front_path = path.join('\\uploads\\', file_name),
-    absolute_path = 'E:\\Thinkful\\capstone3\\capstone3-server\\public' + front_path,
-    access_path='http://localhost:8080'+replaceAll(front_path);
-
-    function replaceAll(str) {
-      return str.replace(/\\/g, '/');
-    };
-
-    //console.log('absolute path:', absolute_path);
-    //console.log('access_path',access_path);
-    
-    fs.readFile(old_path, function(err, data) {
-      fs.writeFile(absolute_path, data, function(err) {
-        fs.unlink(old_path, function(err) {
-          if (err) {
-            res.status(500).json({'success': false});
-          }else{
-            const userAuth=req.headers.authorization.substr(7,);
-            const username=jwtDecode(userAuth).user.username;
-            const dateStr=fields.date || '2001-01-01';
-            const dateObj=strToDate(dateStr);
-
-            // check if already have image associated with current user, ticket and date
-            MyRecords
-            .find({username:username,ticketId:fields.ticketId,dateStr:dateStr})
-            .then(docs=>{
-              if(docs.length===0){
-                MyRecords.create({
-                  username:username,
-                  ticketId:req.params.ticketId,
-                  ticketName:fields.ticketName,
-                  dateStr:dateStr,
-                  date:dateObj,
-                  imageUrl:[{
-                    src:access_path,
-                    comment:fields.comment
-                  }]
-                });
-                console.log('upload image success');
-                res.status(201).json({message:'upload success'});
-              }else{
-                docs[0].imageUrl.push({
-                  src:access_path,
-                  comment:fields.comment
-                });
-                docs[0].save()
-                .then(saved=>{
-                  console.log('upload image success');
-                  res.status(201).json({message:'upload success'});
-                })
-              }
-            })
-            .catch(err=>{
-              console.log(err);
-              res.status(500).json({message:'Internal Server Error'});
-            });
-          }
-        });
+    let imgPath = files.file.path;
+    let uploadSecUrl,publicId;
+    cloudinary.uploader.upload(imgPath,function(apiRes){
+      uploadSecUrl=apiRes.secure_url;
+      publicId=apiRes.public_id;
+      const dateStr=fields.date || '2001-01-01';
+      const dateObj=strToDate(dateStr);     
+      // check if already have image associated with current user, ticket and date
+      MyRecords
+      .find({username:username,ticketId:fields.ticketId,dateStr:dateStr})
+      .then(docs=>{
+        if(docs.length===0){
+          MyRecords.create({
+            username:username,
+            ticketId:req.params.ticketId,
+            ticketName:fields.ticketName,
+            dateStr:dateStr,
+            date:dateObj,
+            imageUrl:[{
+              src:uploadSecUrl,
+              publicId:publicId,
+              comment:fields.comment
+            }]
+          });
+          console.log('upload image success, public_id: ',publicId);
+          res.status(201).json({message:'upload success'});
+        }else{
+          docs[0].imageUrl.push({
+            src:uploadSecUrl,
+            publicId:publicId,
+            comment:fields.comment
+          });
+          docs[0].save()
+          .then(saved=>{
+            console.log('upload image success, public_id: ',publicId);
+            res.status(201).json({message:'upload success'});
+          })
+        }
+      })
+      .catch(err=>{
+        console.log(err);
+        res.status(500).json({message:'Internal Server Error'});
       });
     });
   });
@@ -141,24 +125,22 @@ router.put('/ticket/:ticketId/record/:recordId',bodyParser,(req,res)=>{
 // DELETE a whole collection of photos for a specific record
 router.delete('/ticket/:ticketId/record/:recordId',(req,res)=>{
   // delete the photo files from storage
-  const filePaths=[];
+  const publicIds=[];
   MyRecords.find({_id:req.params.recordId})
   .then(docs=>{
     docs.map(doc=>{
-      doc.imageUrl.map(imgObj=>{filePaths.push(imgObj.src);});
+      doc.imageUrl.map(imgObj=>{publicIds.push(imgObj.publicId);});
     });
-    return filePaths;
+    return publicIds;
   })
-  .then(filePaths=>{
-    filePaths.map(currPath=>{
-      let index = currPath.lastIndexOf('/') + 1;
-      let fileName = currPath.substr(index,);
-      let memoryPath='E:\\Thinkful\\capstone3\\capstone3-server\\public\\uploads\\'+fileName;
-      console.log('file to delete: ',fileName);
-      fs.unlink(memoryPath, function(err){
-        if(err) return console.error(err);
-        console.log('delete photo successfully');
-      });
+  .then(publicIds=>{
+    publicIds.map(currPublicId=>{
+      cloudinary.v2.uploader.destroy(currPublicId,(err,result)=>{
+        if(err){
+          console.error('Error: deleting image from cloudinary - ',err);
+        }else{
+          console.log('Success: deleted image from cloudinary - ',result);
+        }
     }); 
 
     MyRecords
@@ -178,31 +160,27 @@ router.delete('/ticket/:ticketId/record/:recordId',(req,res)=>{
 router.delete('/image/:imageId',(req,res)=>{
   const imageId=req.params.imageId;
   // delete photo url from the database and files from memory
-  let filePath;
+  let imgPublicId;
   MyRecords
   .find({"imageUrl._id":imageId})
   .then(docs=>{
-    console.log('found doc containing img: ',docs);
     let toDelete;
     for(let i=0;i<docs[0].imageUrl.length;i++){
       if(docs[0].imageUrl[i]._id=imageId){
         toDelete=i;
-        filePath=docs[0].imageUrl[i].src;
+        imgPublicId=docs[0].imageUrl[i].publicId;
         break;
       }
     }
-    // delete physical file
-    let index = filePath.lastIndexOf('/') + 1;
-    let fileName = filePath.substr(index,);
-    let memoryPath='E:\\Thinkful\\capstone3\\capstone3-server\\public\\uploads\\'+fileName;  
-    fs.unlink(memoryPath, function(err){
-      if(err) return console.error(err);
-      console.log('delete photo files successfully');
-    });
+    // delete file from cloudinary
+    cloudinary.v2.uploader.destroy(imgPublicId,(err,result)=>{
+      console.log(result);
+    })
+
     // delete database info
     docs[0].imageUrl.splice(toDelete,1);
     docs[0].save();
-    console.log(`delete image ${imageId} from the record`);
+    console.log(`delete image (publicId: ${imgPublicId}) from the record`);
     res.status(204).end();
   })
   .catch(err=>{

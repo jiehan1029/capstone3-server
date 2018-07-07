@@ -12,6 +12,7 @@ const RecordsSchema = mongoose.Schema({
   date:{type:Date, default: new Date('2000-01-01')},
   imageUrl:[{
     src:{type:String},
+    publicId:{type:String},
     comment:{type:String}
   }]
 });
