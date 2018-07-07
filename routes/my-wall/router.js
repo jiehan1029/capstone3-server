@@ -90,6 +90,9 @@ router.post('/ticket/:ticketId', function (req, res) {
         console.log(err);
         res.status(500).json({message:'Internal Server Error'});
       });
+    },{
+      folder:"summer-bucket-app",
+      use_filename:true
     });
   });
 });
