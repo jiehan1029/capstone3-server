@@ -20,7 +20,7 @@ router.get('/', (req, res) => {
       res.status(200).json(tickets);
     })
     .catch(err => {
-      res.status(500).json({message: 'Internal Server Error'});      
+      res.status(500).json({message: 'User have not created a bucket yet, or Internal Server Error'});      
     });
 });
 
